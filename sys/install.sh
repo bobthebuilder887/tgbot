@@ -4,8 +4,8 @@ PYLOG=tgbot.log
 SERVICE=tgbot.service
 SCRIPT=tgbot
 
-# Install the project using make
-make install
+# Install the project using make using dev mode to be able to update the bot
+make install_dev
 
 # Check if a valid config.json file exists (runner requires a working config)
 if [ ! -f config.json ]; then
