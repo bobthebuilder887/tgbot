@@ -25,7 +25,7 @@ make install_dev
 
 ## Usage
 
-Before running the bot, set up the `config.json`` file. Use `config.json.example` as a template.
+Before running the bot, set up the `config.json` file. Use `config.json.example` as a template.
 
 ### Main bot
 
