@@ -1,4 +1,4 @@
-#!usr/bin bash
+#!/usr/bin/bash
 cd /home/user_name/tgbot
 source ./.venv/bin/activate
 tg-bot
