@@ -220,10 +220,6 @@ if CFG.fwd_bots:
         await asyncio.gather(*tasks)
 
 
-async def notifiy_group(client, msg):
-    await client.send_message(CFG.fwd_group.id, msg)
-
-
 def main() -> None:
     with client:
         client.run_until_disconnected()
