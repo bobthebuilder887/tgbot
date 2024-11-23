@@ -226,12 +226,7 @@ async def notifiy_group(client, msg):
 
 def main() -> None:
     with client:
-        asyncio.run(notifiy_group(client, "Group has been restarted!"))
-        try:
-            client.run_until_disconnected()
-        except Exception as e:
-            logger.error(e, exc_info=True)
-            asyncio.run(notifiy_group(client, "Group aggregator is offline!"))
+        client.run_until_disconnected()
 
 
 if __name__ == "__main__":
