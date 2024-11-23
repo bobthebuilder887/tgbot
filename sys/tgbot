@@ -1,0 +1,5 @@
+#!usr/bin bash
+cd /home/user_name/tg_bot
+source ./.venv/bin/activate
+tg-bot
+deactivate

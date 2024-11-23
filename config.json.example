@@ -1,0 +1,57 @@
+{
+  "Telegram": {
+    "api_hash": "your_hash",
+    "api_id": 00000000,
+    "session_name": "session",
+    "test_session_name": "session_test"
+  },
+  "Scripts":  {
+    "aggregate": true,
+    "fwd_bots": true,
+    "fwd_aggregate": true
+  },
+  "Groups": {
+    "fwd_group": {"name": "reference_name", "id": -1000000000000},
+    "source_channels": [
+      {"name": "reference_name", "id": 0000000000},
+      {"name": "reference_name", "id": 0000000000},
+      {"name": "reference_name", "id": 0000000000},
+      {"name": "reference_name", "id": 0000000000}
+    ],
+    "source_groups": [
+      {"name": "reference_name", "id": -1000000000000}, 
+      {"name": "reference_name", "id": 0000000000}
+    ],
+    "ignore_ids": [
+      {"name": "RickBot", "id": 6126376117},
+      {"name": "reference_name", "id": 0000000000}, 
+      {"name": "reference_name", "id":  0000000000},
+      {"name": "reference_name", "id": 000000000},
+      {"name": "reference_name", "id":  000000000},
+      {"name": "reference_name", "id": 0000000000},
+      {"name": "reference_name", "id": 0000000000},
+      {"name": "reference_name", "id": 0000000000},
+      {"name": "reference_name", "id": 000000000}
+    ]
+  },
+  "Bots": {
+    "evm_bot_1": {"name": "reference_name", "id": 0000000000},
+    "evm_bot_1": {"name": "reference_name", "id": 0000000000},
+    "sol_bot_2": {"name": "reference_name", "id": 0000000000},
+    "sol_bot_2": {"name": "reference_name", "id": 0000000000},
+    "always_forward": [
+      {"name": "reference_name", "id": 000000000},
+      {"name": "reference_name", "id": 0000000000},
+      {"name": "reference_name", "id": 0000000000},
+      {"name": "reference_name", "id": 0000000000},
+      {"name": "reference_name", "id":  0000000000},
+      {"name": "reference_name", "id": 0000000000},
+      {"name": "reference_name", "id":  0000000000},
+      {"name": "reference_name", "id": 0000000000},
+      {"name": "reference_name", "id": 0000000000
+}
+    ],
+    "start_h_utc": 0,
+    "end_h_utc": 24
+  }
+}
