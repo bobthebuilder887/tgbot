@@ -122,8 +122,5 @@ def auth_cli():
     CFG = ScriptConfig.from_json(Path(args.config_path))
 
     client = TelegramClient(CFG.session_name, CFG.api_id, CFG.api_hash)
-    if client.is_user_authorized:
-        print("Already authorized")
-    else:
-        client.start()
-        client.disconnect()
+    client.start()
+    client.disconnect()
