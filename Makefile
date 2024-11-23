@@ -3,7 +3,7 @@ REMOTE :=
 KEY :=
 PY := python3.12
 PROJECT_DIR := src/crypto_telegram_bot
-PROJECT_NAME := tg_tools
+PROJECT_NAME := tgbot
 ENV_DIR := .venv
 ENV := ./$(ENV_DIR)/bin/$(PY)
 PIP := ./$(ENV_DIR)/bin/pip
@@ -30,6 +30,9 @@ get_config:
 
 update_config:
 	scp -i ${KEY} ${LOCAL}/${CFG_FILE} ${REMOTE}:~/${PROJECT_NAME}/${CFG_FILE}
+
+update_remote:
+	ssh -i ${KEY} ${REMOTE} "cd ~/${PROJECT_NAME} && git pull && systemctl --user restart tgbot.service"
 
 clean:
 	rm -rf ${ENV_DIR}

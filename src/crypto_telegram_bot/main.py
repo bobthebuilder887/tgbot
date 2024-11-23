@@ -220,9 +220,18 @@ if CFG.fwd_bots:
         await asyncio.gather(*tasks)
 
 
+async def notifiy_group(client, msg):
+    await client.send_message(CFG.fwd_group.id, msg)
+
+
 def main() -> None:
     with client:
-        client.run_until_disconnected()
+        asyncio.run(notifiy_group(client, "Group has been restarted!"))
+        try:
+            client.run_until_disconnected()
+        except Exception as e:
+            logger.error(e, exc_info=True)
+            asyncio.run(notifiy_group(client, "Group aggregator is offline!"))
 
 
 if __name__ == "__main__":
