@@ -15,7 +15,7 @@ if [ ! -f config.json ]; then
 fi
 
 # Perform first-time authentification for Telegram
-./.venv/bin/python3 auth
+./.venv/bin/python3 auth-cli
 # copy script to local bin
 sudo cp ./sys/$SCRIPT /usr/local/bin
 # replace user_name with your user name in script file
