@@ -4,12 +4,11 @@ After=network.target
 
 [Service]
 Type=simple
-User=user_name
-ExecStart=/usr/local/bin/run_tgbot
+ExecStart=/usr/local/bin/tgbot
 Restart=always
 RestartSec=3
 StandardOutput=journal
 StandardError=journal
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=default.target
