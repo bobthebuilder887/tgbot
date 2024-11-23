@@ -35,7 +35,7 @@ Detects users posting Solana and EVM contracts, which get forwarded to an aggreg
 2. Buy bot #2 buys new contracts posted by white-listed users
 
 ```{bash}
-source ./.venv/bin/activate && tg_bot
+source ./.venv/bin/activate && tg-bot
 ```
 
 ### Find user ids
@@ -51,5 +51,5 @@ source ./.venv/bin/activate && get-id-cli
 Set up on a remote ubuntu machine as non-root (make sure to have a configuration file ready in home directory):
 
 ```{bash}
-cd ~ && git clone https://github.com/bobthebuilder887/tgbot && cd tgtools && cp ../config.json . && bash sys/install.sh
+cd ~ && git clone https://github.com/bobthebuilder887/tgbot && cd tgbot && cp ../config.json . && bash sys/install.sh
 ```

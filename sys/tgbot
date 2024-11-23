@@ -1,5 +1,5 @@
 #!usr/bin bash
-cd /home/user_name/tg_bot
+cd /home/user_name/tgbot
 source ./.venv/bin/activate
 tg-bot
 deactivate
