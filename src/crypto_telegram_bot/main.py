@@ -14,7 +14,7 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO,
     filename="tgbot.log",
-    filemode="w",
+    filemode="a",
 )
 logger = logging.getLogger(__name__)
 
