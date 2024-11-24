@@ -3,13 +3,18 @@ USER=$(whoami)
 PYLOG=tgbot.log
 SERVICE=tgbot.service
 SCRIPT=tgbot
+PY=python3.12
 
+# Update system
+sudo apt-get update -y && sudo apt-get upgrade -y
+# Make sure python is installed
+sudo apt-get install -y $PY python3-pip
 # Install the project using make using dev mode to be able to update the bot
 make install_dev
 
 # Check if a valid config.json file exists (runner requires a working config)
 if [ ! -f config.json ]; then
-	echo "config.json file not found"
+	echo "config.json file not found, create a config file before you proceed"
 	make clean
 	exit 1
 fi
