@@ -25,14 +25,18 @@ install_dev:
 lint:
 	${RUFF} format ${PROJECT_DIR}/*.py && ${ISORT} ${PROJECT_DIR}/*.py
 
+clean:
+	rm -rf ${ENV_DIR}
+
+# REMOTE COMMANDS ----------------------------------------------------------------------
 get_config:
 	scp -i ${KEY} ${REMOTE}:~/${PROJECT_NAME}/${CFG_FILE} ${LOCAL}/${CFG_FILE}
+
+get_log:
+	scp -i ${KEY} ${REMOTE}:~/${PROJECT_NAME}/${PROJECT_NAME}.log ${LOCAL}
 
 update_config:
 	scp -i ${KEY} ${LOCAL}/${CFG_FILE} ${REMOTE}:~/${PROJECT_NAME}/${CFG_FILE}
 
 update_remote:
-	ssh -i ${KEY} ${REMOTE} "cd ~/${PROJECT_NAME} && git pull && systemctl --user restart tgbot.service"
-
-clean:
-	rm -rf ${ENV_DIR}
+	ssh -i ${KEY} ${REMOTE} "cd ~/${PROJECT_NAME} && git pull && systemctl --user restart ${PROJECT_NAME}.service"
