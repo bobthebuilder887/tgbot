@@ -65,7 +65,7 @@ IGNORED_IDS = CFG.ignored_ids
 
 APE_CALL_CENTER = -1001938981479
 PATTERN = r"# X Called:"
-
+WIN_RATE = 40
 parsed_cas = set()
 
 
@@ -96,6 +96,14 @@ def find_2x(msg_str: str) -> float:
     return float(rate)
 
 
+def find_caller(msg_str: str) -> str:
+    caller = ""
+    for line in msg_str.split("\n"):
+        if "New from" in line:
+            caller = line.split()[-2].strip()
+    return caller
+
+
 def parse_ape(message) -> tuple | Literal[False]:
     # Check if the msg is of a call
     text = message.raw_text
@@ -112,8 +120,9 @@ def parse_ape(message) -> tuple | Literal[False]:
 
     # Make sure the winrate is above 40% threshold
     rate = find_2x(text)
-    if rate > 40:
-        return ca, chain, rate
+    if rate > WIN_RATE:
+        caller = find_caller(text)
+        return ca, chain, rate, caller
     else:
         return False
 
@@ -173,7 +182,7 @@ logging.info("Launching Tg Bot. The following settings are active:")
 
 
 if CFG.aggregate:
-    # Aggregate all Channel and group contract posts (excludes specidfied users)
+    # Aggregate all Channel and group contract posts (excludes specified users)
     channel_str = "\n".join(str(g) for g in CFG.source_channels)
     group_str = "\n".join(str(g) for g in CFG.source_groups)
     ignore_str = "\n".join(str(g) for g in CFG.ignore_ids)
@@ -182,7 +191,7 @@ if CFG.aggregate:
     logging.info(f"from channels:{channel_str}")
     logging.info(f"from groups:{group_str}")
     logging.info(f"ignoring users:{ignore_str}")
-    logging.info("Parsing APE CENTRE CALLS ABOVE 40% 2x hitrate")
+    logging.info(f"Parsing APE CENTRE CALLS ABOVE {WIN_RATE}% 2x hitrate")
 
     @client.on(events.NewMessage(chats=CFG.tracked_ids))
     async def forward_messages(event):
@@ -216,8 +225,11 @@ if CFG.aggregate:
         if not ape:
             return
         else:
-            ca, chain, rate = ape
-            await client.send_message(entity=CFG.fwd_group.id, message=f"{ca} ({chain}/{rate}%)")
+            ca, chain, rate, caller = ape
+            await client.send_message(
+                entity=CFG.fwd_group.id,
+                message=f"New call from Ape's Call Center:\nCaller: {caller}\nChain: {chain}\nWinrate: {rate}%\nCA: {ca}",
+            )
 
 
 if CFG.fwd_aggregate:
