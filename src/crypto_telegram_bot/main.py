@@ -45,7 +45,7 @@ MESSAGE_PATTERNS: list[str] = [
     SCAN := r"^/z",
     CHART := r"^/cc",
     MOVE := r"0x[a-fA-F0-9]{64}::[a-zA-Z0-9_]+::[a-zA-Z0-9_]+",
-    TON := r"EQ[A-Za-z0-9_-]{46}{64}",
+    TON := r"EQ[A-Za-z0-9_-]{46}",
 ]
 
 IGNORE_CMDS: list[str] = [
