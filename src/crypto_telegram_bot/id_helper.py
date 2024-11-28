@@ -8,9 +8,7 @@ from telethon.tl.types import Channel, Chat, InputPeerChannel, PeerChannel, User
 from crypto_telegram_bot.config import ScriptConfig
 
 # Set up logging
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.WARNING
-)
+logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.WARNING)
 logger = logging.getLogger(__name__)
 
 
@@ -59,9 +57,7 @@ def get_chat_info(client, chat_identifier) -> dict:
                         input_peer = InputPeerChannel(channel_id, access_hash)
                         entity = client.get_entity(input_peer)
                 except Exception as inner_e:
-                    logger.error(
-                        f"Failed to get entity using alternative method: {inner_e}"
-                    )
+                    logger.error(f"Failed to get entity using alternative method: {inner_e}")
                     raise
             else:
                 raise
@@ -81,9 +77,7 @@ def get_chat_info(client, chat_identifier) -> dict:
                     participants_count = None
 
                 result = {
-                    "id": f"-100{entity.id}"
-                    if isinstance(entity, Channel)
-                    else f"-{entity.id}",
+                    "id": f"-100{entity.id}" if isinstance(entity, Channel) else f"-{entity.id}",
                     "title": entity.title,
                     "type": _get_chat_type(entity),
                     "username": getattr(entity, "username", None),
@@ -137,9 +131,7 @@ def get_user_info_cli():
     try:
         with TelegramClient(cfg.test_session_name, cfg.api_id, cfg.api_hash) as client:
             while True:
-                chat_identifier = input(
-                    "\nEnter chat identifier (ID, username, or link): "
-                )
+                chat_identifier = input("\nEnter chat identifier (ID, username, or link): ")
                 result = get_chat_info(client, chat_identifier)
                 if result:
                     print("\nResults:")

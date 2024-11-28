@@ -13,9 +13,7 @@ from telethon.tl.types import Channel, Chat, User
 from crypto_telegram_bot.config import ScriptConfig
 
 # Set up logging
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
-)
+logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 cfg = ScriptConfig.from_json()
@@ -65,18 +63,14 @@ class GroupLister:
                     # Try to get invite link if it's private
                     if basic_info["is_private"]:
                         try:
-                            invite_link = await self.client(
-                                ExportChatInviteRequest(entity)
-                            )
+                            invite_link = await self.client(ExportChatInviteRequest(entity))
                             basic_info["invite_link"] = invite_link.link
                         except Exception:
                             pass
 
                 elif isinstance(entity, Chat):
                     full_chat = await self.client(GetFullChatRequest(entity.id))
-                    basic_info["member_count"] = len(
-                        full_chat.participants.participants
-                    )
+                    basic_info["member_count"] = len(full_chat.participants.participants)
 
             except Exception as e:
                 logger.warning(f"Couldn't get full info for {dialog.name}: {str(e)}")

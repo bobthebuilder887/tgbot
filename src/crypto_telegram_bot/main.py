@@ -170,9 +170,7 @@ if CFG.fwd_aggregate:
         if FIRST_TIME not in event.message.raw_text:
             return
 
-        logger.info(
-            f"First time ca detected in {CFG.fwd_group}:\n{event.message.raw_text}"
-        )
+        logger.info(f"First time ca detected in {CFG.fwd_group}:\n{event.message.raw_text}")
 
         tasks = [
             forward_eth(event.message.text, client=client, bot_id=CFG.evm_bot_1.id),
@@ -212,9 +210,7 @@ if CFG.fwd_bots:
         user_name = CFG.all_ids.get(user_id, "unknown")
         group_name = CFG.all_ids.get(event.message.chat_id, "unknown")
         chat_id = event.message.chat_id
-        logger.info(
-            f"First time ca post detected by {user_name} ({user_id}) in {group_name} ({chat_id})"
-        )
+        logger.info(f"First time ca post detected by {user_name} ({user_id}) in {group_name} ({chat_id})")
 
         tasks = [
             forward_eth(event.message.text, client=client, bot_id=CFG.evm_bot_2.id),
