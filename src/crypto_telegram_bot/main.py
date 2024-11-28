@@ -228,7 +228,7 @@ if CFG.aggregate:
             ca, chain, rate, caller = ape
             await client.send_message(
                 entity=CFG.fwd_group.id,
-                message=f"New call from Ape's Call Center:\nCaller: {caller}\nChain: {chain}\nWinrate: {rate}%\nCA: {ca}",
+                message=f"New call from Ape's Call Center:\nCaller: {caller}\nChain: {chain}\n2X last 7d: {rate}%\nCA: {ca}",
             )
 
 
