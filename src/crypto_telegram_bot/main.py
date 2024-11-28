@@ -31,6 +31,8 @@ parser.add_argument(
 
 args = parser.parse_args()
 
+APE_CALL_CENTER = -1001938981479
+
 CFG = ScriptConfig.from_json(args.config_path)
 
 MESSAGE_PATTERNS: list[str] = [
@@ -40,6 +42,7 @@ MESSAGE_PATTERNS: list[str] = [
     SCAN := r"^/z",
     CHART := r"^/cc",
     MOVE := r"0x[a-fA-F0-9]{64}::[a-zA-Z0-9_]+::[a-zA-Z0-9_]+",
+    TON := r"EQ[A-Za-z0-9_-]{46}{64}",
 ]
 
 IGNORE_CMDS: list[str] = [
@@ -48,6 +51,7 @@ IGNORE_CMDS: list[str] = [
     r"/nh",
     r"/find",
     r"/first",
+    r"/fa",
 ]
 
 RICK_BOT: int = 6126376117
