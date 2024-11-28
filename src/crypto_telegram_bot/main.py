@@ -33,6 +33,8 @@ args = parser.parse_args()
 
 APE_CALL_CENTER = -1001938981479
 
+AVAILABLE_CHAINS = ("ethereum", "solana", "base")
+
 CFG = ScriptConfig.from_json(args.config_path)
 
 MESSAGE_PATTERNS: list[str] = [
@@ -59,6 +61,57 @@ FIRST_TIME: str = r"💨 You are first"
 
 
 IGNORED_IDS = CFG.ignored_ids
+
+APE_CALL_CENTER = -1001938981479
+PATTERN = r"# X Called:"
+
+parsed_cas = set()
+
+
+def find_ca(msg_str: str) -> str:
+    ca = ""
+    for line in msg_str.split("\n"):
+        if "CA: " in line:
+            ca = line.split()[-1].strip()
+            break
+    return ca
+
+
+def find_chain(msg_str: str) -> str:
+    chain = ""
+    for line in msg_str.split("\n"):
+        if "Chain" in line:
+            chain = line.split()[-1].strip().lower()
+            break
+    return chain
+
+
+def find_2x(msg_str: str) -> float:
+    rate = 0
+    for line in msg_str.split("\n"):
+        if "2x Wins" in line:
+            rate = line.split()[-2].strip("%")
+            break
+    return float(rate)
+
+
+def parse_ape(message) -> tuple:
+    # Check if the msg is of a call
+    text = message.raw_text
+    if PATTERN not in text:
+        return tuple()
+
+    # Find the contract
+    ca = find_ca(text)
+
+    # Find the chain and check if it is possible to buy
+    chain = find_chain(text)
+    if chain not in AVAILABLE_CHAINS:
+        return tuple()
+
+    # Make sure the winrate is above 40% threshold
+    rate = find_2x(text)
+    return ca, chain, rate if rate > 40 else tuple()
 
 
 def get_entity_id(msg) -> int:
@@ -125,6 +178,7 @@ if CFG.aggregate:
     logging.info(f"from channels:{channel_str}")
     logging.info(f"from groups:{group_str}")
     logging.info(f"ignoring users:{ignore_str}")
+    logging.info(f"Parsing APE CENTRE CALLS ABOVE 40% 2x hitrate")
 
     @client.on(events.NewMessage(chats=CFG.tracked_ids))
     async def forward_messages(event):
@@ -146,6 +200,20 @@ if CFG.aggregate:
                 await client.forward_messages(CFG.fwd_group.id, msg)
                 logger.info(f"Message forwarded to {CFG.fwd_group}: {msg.text}")
                 break
+
+    @client.on(
+        events.NewMessage(
+            chats=APE_CALL_CENTER,
+        )
+    )
+    async def auto_fwd_ape(event) -> None:
+        msg = event.message
+        ape = parse_ape(msg)
+        if not ape:
+            return
+        else:
+            ca, chain, rate = ape
+            await client.send_message(entity=CFG.fwd_group.id, message=f"{ca} ({chain}/{rate})")
 
 
 if CFG.fwd_aggregate:
@@ -210,7 +278,8 @@ if CFG.fwd_bots:
         user_name = CFG.all_ids.get(user_id, "unknown")
         group_name = CFG.all_ids.get(event.message.chat_id, "unknown")
         chat_id = event.message.chat_id
-        logger.info(f"First time ca post detected by {user_name} ({user_id}) in {group_name} ({chat_id})")
+        logger.info(
+            f"First time ca post detected by {user_name} ({user_id}) in {group_name} ({chat_id})")
 
         tasks = [
             forward_eth(event.message.text, client=client, bot_id=CFG.evm_bot_2.id),
