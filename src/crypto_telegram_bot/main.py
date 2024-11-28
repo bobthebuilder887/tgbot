@@ -3,6 +3,7 @@ import asyncio
 import datetime
 import logging
 import re
+from typing import Literal
 
 import pytz
 from telethon import TelegramClient, events
@@ -95,11 +96,11 @@ def find_2x(msg_str: str) -> float:
     return float(rate)
 
 
-def parse_ape(message) -> tuple:
+def parse_ape(message) -> tuple | Literal[False]:
     # Check if the msg is of a call
     text = message.raw_text
     if PATTERN not in text:
-        return tuple()
+        return False
 
     # Find the contract
     ca = find_ca(text)
@@ -107,11 +108,14 @@ def parse_ape(message) -> tuple:
     # Find the chain and check if it is possible to buy
     chain = find_chain(text)
     if chain not in AVAILABLE_CHAINS:
-        return tuple()
+        return False
 
     # Make sure the winrate is above 40% threshold
     rate = find_2x(text)
-    return ca, chain, rate if rate > 40 else tuple()
+    if rate > 40:
+        return ca, chain, rate
+    else:
+        return False
 
 
 def get_entity_id(msg) -> int:
@@ -178,7 +182,7 @@ if CFG.aggregate:
     logging.info(f"from channels:{channel_str}")
     logging.info(f"from groups:{group_str}")
     logging.info(f"ignoring users:{ignore_str}")
-    logging.info(f"Parsing APE CENTRE CALLS ABOVE 40% 2x hitrate")
+    logging.info("Parsing APE CENTRE CALLS ABOVE 40% 2x hitrate")
 
     @client.on(events.NewMessage(chats=CFG.tracked_ids))
     async def forward_messages(event):
@@ -213,7 +217,7 @@ if CFG.aggregate:
             return
         else:
             ca, chain, rate = ape
-            await client.send_message(entity=CFG.fwd_group.id, message=f"{ca} ({chain}/{rate})")
+            await client.send_message(entity=CFG.fwd_group.id, message=f"{ca} ({chain}/{rate}%)")
 
 
 if CFG.fwd_aggregate:
