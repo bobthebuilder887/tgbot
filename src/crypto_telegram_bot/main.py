@@ -288,9 +288,11 @@ if CFG.fwd_bots:
         reply_msg = await event.message.get_reply_message()
         user_id = get_entity_id(reply_msg)
 
-        if user_id not in CFG.fwd_ids:
+        if user_id not in CFG.fwd_ids and check_time(
+            start=CFG.start_h_utc,
+            end=CFG.end_h_utc,
+        ):
             return
-
         user_name = CFG.all_ids.get(user_id, "unknown")
         group_name = CFG.all_ids.get(event.message.chat_id, "unknown")
         chat_id = event.message.chat_id
