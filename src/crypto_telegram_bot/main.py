@@ -68,6 +68,8 @@ PATTERN = r"# X Called:"
 WIN_RATE = 40
 parsed_cas = set()
 
+IGNORE_CALLS = ("@wouldcalls",)
+
 
 def find_ca(msg_str: str) -> str:
     ca = ""
@@ -120,11 +122,14 @@ def parse_ape(message) -> tuple | Literal[False]:
 
     # Make sure the winrate is above 40% threshold
     rate = find_2x(text)
-    if rate > WIN_RATE:
-        caller = find_caller(text)
-        return ca, chain, rate, caller
-    else:
+    if rate <= WIN_RATE:
         return False
+
+    caller = find_caller(text)
+    if caller in IGNORE_CALLS:
+        return False
+
+    return ca, chain, rate, caller
 
 
 def get_entity_id(msg) -> int:
