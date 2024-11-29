@@ -38,7 +38,7 @@ AVAILABLE_CHAINS = ("ethereum", "solana", "base")
 
 CFG = ScriptConfig.from_json(args.config_path)
 
-MESSAGE_PATTERNS: list[str] = [
+MESSAGE_PATTERNS: tuple[str, ...] = (
     TICKER := r"\$[A-z0-9]+",
     EVM := r"0x[a-fA-F0-9]{40}",
     SOL := r"[1-9A-HJ-NP-Za-km-z]{32,44}",
@@ -46,16 +46,16 @@ MESSAGE_PATTERNS: list[str] = [
     CHART := r"^/cc",
     MOVE := r"0x[a-fA-F0-9]{64}::[a-zA-Z0-9_]+::[a-zA-Z0-9_]+",
     TON := r"EQ[A-Za-z0-9_-]{46}",
-]
+)
 
-IGNORE_CMDS: list[str] = [
+IGNORE_CMDS: tuple[str, ...] = (
     r"/s",
     r"/ask",
     r"/nh",
     r"/find",
     r"/first",
     r"/fa",
-]
+)
 
 RICK_BOT: int = 6126376117
 FIRST_TIME: str = r"💨 You are first"
@@ -66,7 +66,6 @@ IGNORED_IDS = CFG.ignored_ids
 APE_CALL_CENTER = -1001938981479
 PATTERN = r"# X Called:"
 WIN_RATE = 40
-parsed_cas = set()
 
 IGNORE_CALLS = ("@wouldcalls",)
 
@@ -219,22 +218,23 @@ if CFG.aggregate:
                 logger.info(f"Message forwarded to {CFG.fwd_group}: {msg.text}")
                 break
 
-    @client.on(
-        events.NewMessage(
-            chats=APE_CALL_CENTER,
-        )
-    )
-    async def auto_fwd_ape(event) -> None:
-        msg = event.message
-        ape = parse_ape(msg)
-        if not ape:
-            return
-        else:
-            ca, chain, rate, caller = ape
-            await client.send_message(
-                entity=CFG.fwd_group.id,
-                message=f"New call from Ape's Call Center:\nCaller: {caller}\nChain: {chain}\n2X last 7d: {rate}%\nCA: {ca}",
-            )
+    # TODO: make a test channel to forward-test
+    # @client.on(
+    #     events.NewMessage(
+    #         chats=APE_CALL_CENTER,
+    #     )
+    # )
+    # async def auto_fwd_ape(event) -> None:
+    #     msg = event.message
+    #     ape = parse_ape(msg)
+    #     if not ape:
+    #         return
+    #     else:
+    #         ca, chain, rate, caller = ape
+    #         await client.send_message(
+    #             entity=CFG.fwd_group.id,
+    #             message=f"New call from Ape's Call Center:\nCaller: {caller}\nChain: {chain}\n2X last 7d: {rate}%\nCA: {ca}",
+    #         )
 
 
 if CFG.fwd_aggregate:
@@ -293,7 +293,8 @@ if CFG.fwd_bots:
         reply_msg = await event.message.get_reply_message()
         user_id = get_entity_id(reply_msg)
 
-        if user_id not in CFG.fwd_ids and check_time(
+        # Don't forward if user_id is not whitelisted or if during main trading hours
+        if user_id not in CFG.fwd_ids or check_time(
             start=CFG.start_h_utc,
             end=CFG.end_h_utc,
         ):
@@ -301,8 +302,7 @@ if CFG.fwd_bots:
         user_name = CFG.all_ids.get(user_id, "unknown")
         group_name = CFG.all_ids.get(event.message.chat_id, "unknown")
         chat_id = event.message.chat_id
-        logger.info(
-            f"First time ca post detected by {user_name} ({user_id}) in {group_name} ({chat_id})")
+        logger.info(f"First time ca post detected by {user_name} ({user_id}) in {group_name} ({chat_id})")
 
         tasks = [
             forward_eth(event.message.text, client=client, bot_id=CFG.evm_bot_2.id),
