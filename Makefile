@@ -11,7 +11,7 @@ PIP := ./$(ENV_DIR)/bin/pip
 
 # Project structure
 PROJECT_NAME := tgbot
-PROJECT_DIR := src/tgbot
+PROJECT_DIR := src/crypto_telegram_bot
 LOCAL := ~/Projects/$(PROJECT_NAME)
 
 # Development tools
