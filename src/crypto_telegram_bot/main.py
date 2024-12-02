@@ -46,6 +46,8 @@ MESSAGE_PATTERNS: tuple[str, ...] = (
     CHART := r"^/cc",
     MOVE := r"0x[a-fA-F0-9]{64}::[a-zA-Z0-9_]+::[a-zA-Z0-9_]+",
     TON := r"EQ[A-Za-z0-9_-]{46}",
+    XRP := r"r41524D5900000000000000000000000000000000[1-9A-HJ-NP-Za-km-z]{24,34}",
+    TRX := r"T[A-Za-z1-9]{33}",
 )
 
 IGNORE_CMDS: tuple[str, ...] = (
@@ -63,10 +65,12 @@ FIRST_TIME: str = r"💨 You are first"
 
 IGNORED_IDS = CFG.ignored_ids
 
+# Ape call center settings
+# TODO: make it so that the bot subscribes to the actual call channel
+# and not the call center and then forwards their messages to the fwd group
 APE_CALL_CENTER = -1001938981479
 PATTERN = r"# X Called:"
 WIN_RATE = 40
-
 IGNORE_CALLS = ("@wouldcalls",)
 
 
@@ -254,6 +258,9 @@ if CFG.fwd_aggregate:
         Forward new sol and evm contracts from fwd group to tg bots
         """
         if not check_time(start=CFG.start_h_utc, end=CFG.end_h_utc):
+            # See if this is coming from a whitelisted channel
+            # reply_msg = await event.message.get_reply_message()
+            # user_id = get_entity_id(reply_msg)
             return
 
         if FIRST_TIME not in event.message.raw_text:
