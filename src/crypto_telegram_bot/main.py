@@ -3,7 +3,10 @@ import asyncio
 import datetime
 import logging
 import re
-from typing import Literal
+import sys
+import threading
+import time
+from pathlib import Path
 
 import pytz
 from telethon import TelegramClient, events
@@ -31,25 +34,30 @@ parser.add_argument(
 
 
 args = parser.parse_args()
-
-APE_CALL_CENTER = -1001938981479
-
-AVAILABLE_CHAINS = ("ethereum", "solana", "base")
-
 CFG = ScriptConfig.from_json(args.config_path)
 
-MESSAGE_PATTERNS: tuple[str, ...] = (
-    TICKER := r"\$[A-z0-9]+",
-    EVM := r"0x[a-fA-F0-9]{40}",
+# TODO: insta-forward to bots if this pattern is caught
+AVAILABLE_BOT_PATTERNS = (
+    EVM := r"^0x[a-fA-F0-9]{40}$",
     SOL := r"[1-9A-HJ-NP-Za-km-z]{32,44}",
-    SCAN := r"^/z",
-    CHART := r"^/cc",
-    MOVE := r"0x[a-fA-F0-9]{64}::[a-zA-Z0-9_]+::[a-zA-Z0-9_]+",
-    TON := r"EQ[A-Za-z0-9_-]{46}",
-    XRP := r"r41524D5900000000000000000000000000000000[1-9A-HJ-NP-Za-km-z]{24,34}",
-    TRX := r"T[A-Za-z1-9]{33}",
 )
 
+CONTRACT_PATTERNS: dict[str, str] = {
+    "EVM": (EVM := r"0x[a-fA-F0-9]{40}"),
+    "SOL": (SOL := r"[1-9A-HJ-NP-Za-km-z]{32,44}"),
+    "MOVE": (MOVE := r"0x[a-fA-F0-9]{64}::[a-zA-Z0-9_]+::[a-zA-Z0-9_]+"),
+    "TON": (TON := r"EQ[A-Za-z0-9_-]{46}"),
+    "XRP": (XRP := r"r41524D5900000000000000000000000000000000[1-9A-HJ-NP-Za-km-z]{24,34}"),
+    "TRX": (TRX := r"T[A-Za-z1-9]{33}"),
+}
+
+COIN_PATTERNS: tuple[str, ...] = (
+    SCAN := r"^/z",
+    CHART := r"^/cc",
+    TICKER := r"\$[A-z0-9]+",
+)
+
+ALL_PATTERNS = list(AVAILABLE_BOT_PATTERNS) + list(CONTRACT_PATTERNS)
 IGNORE_CMDS: tuple[str, ...] = (
     r"/s",
     r"/ask",
@@ -61,83 +69,49 @@ IGNORE_CMDS: tuple[str, ...] = (
 
 RICK_BOT: int = 6126376117
 FIRST_TIME: str = r"💨 You are first"
+IGNORED_IDS: list[int] = CFG.ignored_ids
+
+# Store all contracts in one place
+CONTRACTS_SEEN = set()
+if Path("contracts_seen.txt").is_file():
+    with open("contracts_seen.txt", "r") as f:
+        CONTRACTS_SEEN.update(f.read().splitlines())
 
 
-IGNORED_IDS = CFG.ignored_ids
-
-# Ape call center settings
-# TODO: make it so that the bot subscribes to the actual call channel
-# and not the call center and then forwards their messages to the fwd group
-APE_CALL_CENTER = -1001938981479
-PATTERN = r"# X Called:"
-WIN_RATE = 40
-IGNORE_CALLS = ("@wouldcalls",)
+class Active:
+    ACTIVE: bool = True
 
 
-def find_ca(msg_str: str) -> str:
-    ca = ""
-    for line in msg_str.split("\n"):
-        if "CA: " in line:
-            ca = line.split()[-1].strip()
-            break
-    return ca
+def update_ca_file() -> None:
+    OLD_N_SEEN = len(CONTRACTS_SEEN)
+    while Active.ACTIVE:
+        N_SEEN = len(CONTRACTS_SEEN)
+        if N_SEEN != OLD_N_SEEN:
+            size = sys.getsizeof(CONTRACTS_SEEN)
+            logger.info(f"{len(CONTRACTS_SEEN)} contracts seen ({size / 1000:.2f} kB)")
+            if size > 10_000_000:
+                logger.warning("Contracts seen file is getting large!")
+            with open("contracts_seen.txt", "w") as f:
+                f.write("\n".join(CONTRACTS_SEEN))
+            OLD_N_SEEN = N_SEEN
+
+        time.sleep(10)
 
 
-def find_chain(msg_str: str) -> str:
-    chain = ""
-    for line in msg_str.split("\n"):
-        if "Chain" in line:
-            chain = line.split()[-1].strip().lower()
-            break
-    return chain
+def find_contracts(text: str) -> dict[str, set[str]]:
+    new_ca_dict = dict()
+    for chain, pattern in CONTRACT_PATTERNS.items():
+        cas = set(re.findall(pattern=pattern, string=text))
+        if cas:
+            new_cas = cas.difference(CONTRACTS_SEEN)
+            new_ca_dict[chain] = new_cas
+            CONTRACTS_SEEN.update(new_cas)
 
-
-def find_2x(msg_str: str) -> float:
-    rate = 0
-    for line in msg_str.split("\n"):
-        if "2x Wins" in line:
-            rate = line.split()[-2].strip("%")
-            break
-    return float(rate)
-
-
-def find_caller(msg_str: str) -> str:
-    caller = ""
-    for line in msg_str.split("\n"):
-        if "New from" in line:
-            caller = line.split()[-2].strip()
-    return caller
-
-
-def parse_ape(message) -> tuple | Literal[False]:
-    # Check if the msg is of a call
-    text = message.raw_text
-    if PATTERN not in text:
-        return False
-
-    # Find the contract
-    ca = find_ca(text)
-
-    # Find the chain and check if it is possible to buy
-    chain = find_chain(text)
-    if chain not in AVAILABLE_CHAINS:
-        return False
-
-    # Make sure the winrate is above 40% threshold
-    rate = find_2x(text)
-    if rate <= WIN_RATE:
-        return False
-
-    caller = find_caller(text)
-    if caller in IGNORE_CALLS:
-        return False
-
-    return ca, chain, rate, caller
+    return new_ca_dict
 
 
 def get_entity_id(msg) -> int:
     user_id = getattr(getattr(msg, "from_id", -1), "user_id", -1)
-
     if user_id == -1:
         return getattr(getattr(msg, "from_id", -1), "channel_id", -1)
     else:
@@ -146,7 +120,6 @@ def get_entity_id(msg) -> int:
 
 def get_fwd_id(msg) -> int:
     fwd_msg = getattr(msg, "fwd_from", -1)
-
     return get_entity_id(fwd_msg)
 
 
@@ -157,171 +130,94 @@ def check_time(start: int, end: int) -> bool:
     return hour in range(start, end + 1)
 
 
-client = TelegramClient(CFG.session_name, CFG.api_id, CFG.api_hash)
+client = TelegramClient(
+    session=CFG.session_name,
+    api_id=CFG.api_id,
+    api_hash=CFG.api_hash,
+)
 
 
-async def forward_eth(text: str, client, bot_id: int) -> None:
-    ca = re.findall(rf"`{EVM}`", text)
+BOTS = {
+    "SOL": (CFG.sol_bot_1, CFG.sol_bot_2),
+    "EVM": (CFG.evm_bot_1, CFG.evm_bot_2),
+}
 
-    if not ca:
+
+async def send_msg(text: str, client, entity_id: int) -> None:
+    await client.send_message(entity=entity_id, message=text)
+    bot_name = CFG.all_ids.get(entity_id, "unknown")
+    logger.info(f"{text} sent to {bot_name} ({entity_id})")
+
+
+async def fwd_msg(message, client) -> None:
+    await client.forward_messages(CFG.fwd_group.id, message)
+    logger.info(f"Message forwarded to {CFG.fwd_group}: {message.text}")
+
+
+def schedule_forward_cas(message) -> list:
+    tasks = []
+    if not message.text:
+        return tasks
+    new_cas_dict = find_contracts(message.text)
+    for chain, cas in new_cas_dict.items():
+        if chain not in BOTS:
+            continue
+        for ca in cas:
+            tasks.append(send_msg(ca, client, BOTS[chain][0].id))
+            # tasks.append(forward_msg(text, client, BOTS[chain][1]))
+    return tasks
+
+
+logging.info("Launching Tg Bot...")
+
+
+@client.on(events.NewMessage(chats=CFG.tracked_ids))
+async def forward_messages(event):
+    """
+    Forward messages to fwd group and bots that contain crypto-token related patterns
+    """
+    msg = event.message
+
+    user_id = getattr(getattr(msg, "from_id", False), "user_id", False)
+    if user_id in CFG.ignored_ids:
         return
 
-    ca = ca[0].strip("`")
-
-    await client.send_message(entity=bot_id, message=ca)
-    bot_name = CFG.all_ids.get(bot_id, "unknown")
-    logger.info(f"Contract ({ca}) forwarded to {bot_name} ({bot_id})")
-
-
-async def forward_sol(text: str, client, bot_id: int) -> None:
-    ca = re.findall(rf"`{SOL}`", text)
-
-    if not ca:
-        return
-
-    ca = ca[0].strip("`")
-
-    await client.send_message(entity=bot_id, message=ca)
-    bot_name = CFG.all_ids.get(bot_id, "unknown")
-    logger.info(f"Contract ({ca}) forwarded to {bot_name} ({bot_id})")
-
-
-logging.info("Launching Tg Bot. The following settings are active:")
-
-
-if CFG.aggregate:
-    # Aggregate all Channel and group contract posts (excludes specified users)
-    channel_str = "\n".join(str(g) for g in CFG.source_channels)
-    group_str = "\n".join(str(g) for g in CFG.source_groups)
-    ignore_str = "\n".join(str(g) for g in CFG.ignore_ids)
-
-    logging.info(f"\nAggregating all contracts to {CFG.fwd_group}")
-    logging.info(f"from channels:{channel_str}")
-    logging.info(f"from groups:{group_str}")
-    logging.info(f"ignoring users:{ignore_str}")
-    logging.info(f"Parsing APE CENTRE CALLS ABOVE {WIN_RATE}% 2x hitrate")
-
-    @client.on(events.NewMessage(chats=CFG.tracked_ids))
-    async def forward_messages(event):
-        """
-        Forward messages to fwd group that contain crypto-token related patterns
-        """
-        msg = event.message
-
-        user_id = getattr(getattr(msg, "from_id", False), "user_id", False)
-        if user_id in CFG.ignored_ids:
+    for cmd in IGNORE_CMDS:
+        if msg.text.startswith(cmd):
             return
 
-        for cmd in IGNORE_CMDS:
-            if msg.text.startswith(cmd):
-                return
+    tasks = schedule_forward_cas(msg)
 
-        for pattern in MESSAGE_PATTERNS:
-            if re.search(pattern, msg.text):
-                await client.forward_messages(CFG.fwd_group.id, msg)
-                logger.info(f"Message forwarded to {CFG.fwd_group}: {msg.text}")
-                break
+    for pattern in ALL_PATTERNS:
+        if re.search(pattern=pattern, string=msg.text):
+            tasks.append(fwd_msg(msg, client))
+            break
 
-    # TODO: make a test channel to forward-test
-    # @client.on(
-    #     events.NewMessage(
-    #         chats=APE_CALL_CENTER,
-    #     )
-    # )
-    # async def auto_fwd_ape(event) -> None:
-    #     msg = event.message
-    #     ape = parse_ape(msg)
-    #     if not ape:
-    #         return
-    #     else:
-    #         ca, chain, rate, caller = ape
-    #         await client.send_message(
-    #             entity=CFG.fwd_group.id,
-    #             message=f"New call from Ape's Call Center:\nCaller: {caller}\nChain: {chain}\n2X last 7d: {rate}%\nCA: {ca}",
-    #         )
+    await asyncio.gather(*tasks)
+    # TODO: should we save contracts here?
 
 
-if CFG.fwd_aggregate:
-    # Strategy that forwards all fresh contracts from wfwd group at specified times
-    logging.info(f"\nForwarding all fresh contracts from {CFG.fwd_group}")
-    logging.info(f"- Forwarding from {CFG.start_h_utc} to {CFG.end_h_utc}")
-    logging.info(f"- Forwarding to {CFG.sol_bot_1} and {CFG.evm_bot_1}\n")
-
-    @client.on(
-        events.NewMessage(
-            chats=CFG.fwd_group.id,
-            from_users=RICK_BOT,
-        )
-    )
-    async def auto_buy_rick(event) -> None:
-        """
-        Forward new sol and evm contracts from fwd group to tg bots
-        """
-        if not check_time(start=CFG.start_h_utc, end=CFG.end_h_utc):
-            # See if this is coming from a whitelisted channel
-            # reply_msg = await event.message.get_reply_message()
-            # user_id = get_entity_id(reply_msg)
-            return
-
-        if FIRST_TIME not in event.message.raw_text:
-            return
-
-        logger.info(f"First time ca detected in {CFG.fwd_group}:\n{event.message.raw_text}")
-
-        tasks = [
-            forward_eth(event.message.text, client=client, bot_id=CFG.evm_bot_1.id),
-            forward_sol(event.message.text, client=client, bot_id=CFG.sol_bot_1.id),
-        ]
-
-        await asyncio.gather(*tasks)
-
-
-if CFG.fwd_bots:
-    # Strategy that forwards all fresh contracts of whitelisted users from source groups
-    group_str = "\n".join(str(g) for g in CFG.source_groups)
-    user_str = "\n".join(str(u) for u in CFG.always_forward)
-    logging.info(f"Forwarding fresh contracts from whitelisted users in: {group_str}")
-    logging.info(f"- Forwarding from users: {user_str}")
-    logging.info(f"- Forwarding to {CFG.sol_bot_2} and {CFG.evm_bot_2}\n")
-
-    @client.on(
-        events.NewMessage(
-            chats=[g.id for g in CFG.source_groups],
-            from_users=RICK_BOT,
-        )
-    )
-    async def auto_buy_whitelist(event) -> None:
-        """
-        fwd contracts to auto buy new whitelisted user shills
-        """
-        if FIRST_TIME not in event.message.raw_text:
-            return
-
-        reply_msg = await event.message.get_reply_message()
-        user_id = get_entity_id(reply_msg)
-
-        # Don't forward if user_id is not whitelisted or if during main trading hours
-        if user_id not in CFG.fwd_ids or check_time(
-            start=CFG.start_h_utc,
-            end=CFG.end_h_utc,
-        ):
-            return
-        user_name = CFG.all_ids.get(user_id, "unknown")
-        group_name = CFG.all_ids.get(event.message.chat_id, "unknown")
-        chat_id = event.message.chat_id
-        logger.info(f"First time ca post detected by {user_name} ({user_id}) in {group_name} ({chat_id})")
-
-        tasks = [
-            forward_eth(event.message.text, client=client, bot_id=CFG.evm_bot_2.id),
-            forward_sol(event.message.text, client=client, bot_id=CFG.sol_bot_2.id),
-        ]
-
+@client.on(events.NewMessage(chats=CFG.fwd_group.id, from_users=RICK_BOT))
+async def last_resort_fwd_bot(event):
+    """
+    If contract not detected in initial method, see if rick bot caught it in the fwd group
+    """
+    msg = event.message
+    if FIRST_TIME in msg.text:
+        tasks = schedule_forward_cas(msg)
         await asyncio.gather(*tasks)
 
 
 def main() -> None:
+    thread = threading.Thread(target=update_ca_file)
+
+    thread.start()
+
     with client:
         client.run_until_disconnected()
+
+    Active.ACTIVE = False
+    thread.join()
 
 
 if __name__ == "__main__":
