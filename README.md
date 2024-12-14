@@ -29,10 +29,8 @@ Before running the bot, set up the `config.json` file. Use `config.json.example`
 
 ### Main bot
 
-Detects users posting Solana and EVM contracts, which get forwarded to an aggregator group. If the contract is never seen before it gets forwarded to a buy bot. There are two main strategies which can be toggled using the config:
-
-1. Buy bot #1 buys new contracts posted at a specified time frame
-2. Buy bot #2 buys new contracts posted by white-listed users
+Detects Telegram entities posting about crypto coins and forwards this info to an aggregator group,
+whilst also forwarding the contract to telegram bot for purchase.
 
 ```{bash}
 source ./.venv/bin/activate && tg-bot
