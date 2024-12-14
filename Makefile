@@ -67,6 +67,11 @@ update_config:  ## Upload configuration file to remote server
 	@if [ -z "${KEY}" ]; then echo "Error: KEY not set"; exit 1; fi
 	scp -i ${KEY} ${CFG_FILE} ${REMOTE}:~/${PROJECT_NAME}/${CFG_FILE}
 
+update_contracts:  ## Upload new contract txt file to remote server
+	@if [ -z "${REMOTE}" ]; then echo "Error: REMOTE not set"; exit 1; fi
+	@if [ -z "${KEY}" ]; then echo "Error: KEY not set"; exit 1; fi
+	scp -i ${KEY} new_contracts.txt ${REMOTE}:~/${PROJECT_NAME}/new_contracts.txt
+
 update_remote:  ## Update remote repository and restart service
 	@if [ -z "${REMOTE}" ]; then echo "Error: REMOTE not set"; exit 1; fi
 	@if [ -z "${KEY}" ]; then echo "Error: KEY not set"; exit 1; fi
