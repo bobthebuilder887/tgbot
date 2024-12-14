@@ -47,7 +47,7 @@ CONTRACT_PATTERNS: dict[str, str] = {
     "SOL": (SOL := r"[1-9A-HJ-NP-Za-km-z]{32,44}"),
     "MOVE": (MOVE := r"0x[a-fA-F0-9]{64}::[a-zA-Z0-9_]+::[a-zA-Z0-9_]+"),
     "TON": (TON := r"EQ[A-Za-z0-9_-]{46}"),
-    "XRP": (XRP := r"r41524D5900000000000000000000000000000000[1-9A-HJ-NP-Za-km-z]{24,34}"),
+    "XRP": (XRP := r"[A-F0-9]{40}\.r[1-9A-HJ-NP-Za-km-z]{24,34}"),
     "TRX": (TRX := r"T[A-Za-z1-9]{33}"),
 }
 
@@ -57,7 +57,8 @@ COIN_PATTERNS: tuple[str, ...] = (
     TICKER := r"\$[A-z0-9]+",
 )
 
-ALL_PATTERNS = tuple(list(CONTRACT_PATTERNS) + list(COIN_PATTERNS))
+ALL_PATTERNS = tuple(list(CONTRACT_PATTERNS.values()) + list(COIN_PATTERNS))
+
 IGNORE_CMDS: tuple[str, ...] = (
     r"/s",
     r"/ask",
@@ -194,12 +195,11 @@ async def forward_messages(event):
     tasks = schedule_forward_cas(msg)
 
     for pattern in ALL_PATTERNS:
-        if re.search(pattern=pattern, string=msg.text):
+        if re.findall(pattern=pattern, string=msg.text):
             tasks.append(fwd_msg(msg, client))
             break
 
     await asyncio.gather(*tasks)
-    # TODO: should we save contracts here?
 
 
 @client.on(events.NewMessage(chats=CFG.fwd_group.id, from_users=RICK_BOT))
