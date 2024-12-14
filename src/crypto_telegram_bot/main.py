@@ -57,7 +57,7 @@ COIN_PATTERNS: tuple[str, ...] = (
     TICKER := r"\$[A-z0-9]+",
 )
 
-ALL_PATTERNS = list(AVAILABLE_BOT_PATTERNS) + list(CONTRACT_PATTERNS)
+ALL_PATTERNS = tuple(list(CONTRACT_PATTERNS) + list(COIN_PATTERNS))
 IGNORE_CMDS: tuple[str, ...] = (
     r"/s",
     r"/ask",
