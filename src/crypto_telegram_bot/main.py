@@ -101,7 +101,12 @@ def update_ca_file() -> None:
 def find_contracts(text: str) -> dict[str, set[str]]:
     new_ca_dict = dict()
     for chain, pattern in CONTRACT_PATTERNS.items():
-        cas = set(re.findall(pattern=pattern, string=text))
+        # Look for the rick contract line
+        if FIRST_TIME in text:
+            pattern = f"`{pattern}`"
+
+        cas = set(ca.strip("`") for ca in re.findall(pattern=pattern, string=text))
+
         if cas:
             new_cas = cas.difference(CONTRACTS_SEEN)
             new_ca_dict[chain] = new_cas
