@@ -15,9 +15,6 @@ class ScriptConfig:
     api_hash: str
     session_name: str
     test_session_name: str
-    aggregate: bool
-    fwd_bots: bool
-    fwd_aggregate: bool
     source_groups: list[TgId]
     source_channels: list[TgId]
     ignore_ids: list[TgId]
@@ -80,9 +77,6 @@ class ScriptConfig:
             api_hash=cfg["Telegram"]["api_hash"],
             session_name=cfg["Telegram"]["session_name"],
             test_session_name=cfg["Telegram"]["test_session_name"],
-            aggregate=cfg["Scripts"]["aggregate"],
-            fwd_bots=cfg["Scripts"]["fwd_bots"],
-            fwd_aggregate=cfg["Scripts"]["fwd_bots"],
             source_groups=source_groups,
             source_channels=source_channels,
             ignore_ids=ignore_ids,

@@ -5,11 +5,6 @@
     "session_name": "session",
     "test_session_name": "session_test"
   },
-  "Scripts":  {
-    "aggregate": true,
-    "fwd_bots": true,
-    "fwd_aggregate": true
-  },
   "Groups": {
     "fwd_group": {"name": "reference_name", "id": -1000000000000},
     "source_channels": [
