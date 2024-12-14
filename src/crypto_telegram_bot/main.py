@@ -85,18 +85,23 @@ class Active:
 
 def update_ca_file() -> None:
     OLD_N_SEEN = len(CONTRACTS_SEEN)
-    while Active.ACTIVE:
-        N_SEEN = len(CONTRACTS_SEEN)
-        if N_SEEN != OLD_N_SEEN:
-            size = sys.getsizeof(CONTRACTS_SEEN)
-            logger.info(f"{len(CONTRACTS_SEEN)} contracts seen ({size / 1000:.2f} kB)")
-            if size > 10_000_000:
-                logger.warning("Contracts seen file is getting large!")
-            with open("contracts_seen.txt", "w") as f:
-                f.write("\n".join(CONTRACTS_SEEN))
-            OLD_N_SEEN = N_SEEN
+    try:
+        while Active.ACTIVE:
+            N_SEEN = len(CONTRACTS_SEEN)
+            if N_SEEN != OLD_N_SEEN:
+                size = sys.getsizeof(CONTRACTS_SEEN)
+                logger.info(f"{len(CONTRACTS_SEEN)} contracts seen ({size / 1000:.2f} kB)")
+                if size > 10_000_000:
+                    logger.warning("Contracts seen file is getting large!")
+                with open("contracts_seen.txt", "w") as f:
+                    f.write("\n".join(CONTRACTS_SEEN))
+                OLD_N_SEEN = N_SEEN
 
-        time.sleep(10)
+            time.sleep(10)
+    except Exception as e:
+        logger.error(e)
+    finally:
+        logger.info("Contracts seen file update stopped")
 
 
 def find_contracts(text: str) -> dict[str, set[str]]:
