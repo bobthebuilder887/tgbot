@@ -66,6 +66,7 @@ class Active:
 def update_ca_file() -> None:
     OLD_N_SEEN = len(CONTRACTS_SEEN)
     try:
+        logger.info("THREAD IS ACTIVE")
         while Active.ACTIVE:
             N_SEEN = len(CONTRACTS_SEEN)
             if N_SEEN != OLD_N_SEEN:
