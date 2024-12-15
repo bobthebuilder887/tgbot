@@ -23,9 +23,6 @@ class ScriptConfig:
     sol_bot_2: TgId
     evm_bot_1: TgId
     evm_bot_2: TgId
-    always_forward: list[TgId]
-    start_h_utc: int
-    end_h_utc: int
     all_ids: dict = dataclasses.field(init=False)
 
     def __post_init__(self):
@@ -39,9 +36,6 @@ class ScriptConfig:
 
         for i in self.ignore_ids:
             self.all_ids[i.id] = i.name
-
-        for a in self.always_forward:
-            self.all_ids[a.id] = a.name
 
         self.all_ids[self.sol_bot_1.id] = self.sol_bot_1.name
         self.all_ids[self.sol_bot_2.id] = self.sol_bot_2.name
@@ -58,10 +52,6 @@ class ScriptConfig:
     def ignored_ids(self) -> list[int]:
         return [t.id for t in self.ignore_ids]
 
-    @property
-    def fwd_ids(self) -> list[int]:
-        return [t.id for t in self.always_forward]
-
     @classmethod
     def from_json(cls, path: Path = Path("config.json")) -> Self:
         with open(path, "r") as json_file:
@@ -70,7 +60,6 @@ class ScriptConfig:
         ignore_ids = [TgId(**u) for u in cfg["Groups"]["ignore_ids"]]
         source_channels = [TgId(**u) for u in cfg["Groups"]["source_channels"]]
         source_groups = [TgId(**u) for u in cfg["Groups"]["source_groups"]]
-        always_forward = [TgId(**u) for u in cfg["Bots"]["always_forward"]]
 
         return cls(
             api_id=cfg["Telegram"]["api_id"],
@@ -85,9 +74,6 @@ class ScriptConfig:
             sol_bot_2=TgId(**cfg["Bots"]["sol_bot_2"]),
             evm_bot_1=TgId(**cfg["Bots"]["evm_bot_1"]),
             evm_bot_2=TgId(**cfg["Bots"]["evm_bot_2"]),
-            always_forward=always_forward,
-            start_h_utc=cfg["Bots"]["start_h_utc"],
-            end_h_utc=cfg["Bots"]["end_h_utc"],
         )
 
 

@@ -34,19 +34,5 @@
     "evm_bot_1": {"name": "reference_name", "id": 0000000000},
     "sol_bot_2": {"name": "reference_name", "id": 0000000000},
     "sol_bot_2": {"name": "reference_name", "id": 0000000000},
-    "always_forward": [
-      {"name": "reference_name", "id": 000000000},
-      {"name": "reference_name", "id": 0000000000},
-      {"name": "reference_name", "id": 0000000000},
-      {"name": "reference_name", "id": 0000000000},
-      {"name": "reference_name", "id":  0000000000},
-      {"name": "reference_name", "id": 0000000000},
-      {"name": "reference_name", "id":  0000000000},
-      {"name": "reference_name", "id": 0000000000},
-      {"name": "reference_name", "id": 0000000000
-}
-    ],
-    "start_h_utc": 0,
-    "end_h_utc": 24
   }
 }

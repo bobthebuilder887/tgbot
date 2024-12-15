@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "crypto-telegram-bot"
 version = "0.1.0"
 description = "Telegram bot for monitoring and filtering crypto-related messages"
-dependencies = ["telethon>=1.34.0", "pytz"]
+dependencies = ["telethon>=1.34.0"]
 
 [project.optional-dependencies]
 dev = ["isort", "ruff"]

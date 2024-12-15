@@ -1,5 +1,4 @@
 import asyncio
-import datetime
 import logging
 import re
 import sys
@@ -7,7 +6,6 @@ import threading
 import time
 from pathlib import Path
 
-import pytz
 from telethon import TelegramClient, events
 
 from crypto_telegram_bot.config import ScriptConfig
@@ -100,26 +98,6 @@ def find_contracts(text: str) -> dict[str, set[str]]:
             CONTRACTS_SEEN.update(new_cas)
 
     return new_ca_dict
-
-
-def get_entity_id(msg) -> int:
-    user_id = getattr(getattr(msg, "from_id", -1), "user_id", -1)
-    if user_id == -1:
-        return getattr(getattr(msg, "from_id", -1), "channel_id", -1)
-    else:
-        return user_id
-
-
-def get_fwd_id(msg) -> int:
-    fwd_msg = getattr(msg, "fwd_from", -1)
-    return get_entity_id(fwd_msg)
-
-
-def check_time(start: int, end: int) -> bool:
-    tz = pytz.timezone("UTC")
-    now = datetime.datetime.now(tz)
-    hour = now.hour
-    return hour in range(start, end + 1)
 
 
 client = TelegramClient(
