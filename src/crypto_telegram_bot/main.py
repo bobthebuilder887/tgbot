@@ -1,4 +1,3 @@
-import argparse
 import asyncio
 import datetime
 import logging
@@ -22,25 +21,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-parser = argparse.ArgumentParser(description="Crypto Telegram Bot")
-
-parser.add_argument(
-    "-c",
-    "--config-path",
-    type=str,
-    default="config.json",
-    help="config path, defaults to config.json",
-)
-
-
-args = parser.parse_args()
-CFG = ScriptConfig.from_json(args.config_path)
-
-# TODO: insta-forward to bots if this pattern is caught
-AVAILABLE_BOT_PATTERNS = (
-    EVM := r"^0x[a-fA-F0-9]{40}$",
-    SOL := r"[1-9A-HJ-NP-Za-km-z]{32,44}",
-)
+CFG = ScriptConfig.from_json(Path("config.json"))
 
 CONTRACT_PATTERNS: dict[str, str] = {
     "EVM": (EVM := r"0x[a-fA-F0-9]{40}"),
@@ -70,7 +51,6 @@ IGNORE_CMDS: tuple[str, ...] = (
 
 RICK_BOT: int = 6126376117
 FIRST_TIME: str = r"💨 You are first"
-IGNORED_IDS: list[int] = CFG.ignored_ids
 
 # Store all contracts in one place
 CONTRACTS_SEEN = set()
@@ -173,6 +153,7 @@ def schedule_forward_cas(message) -> list:
     for chain, cas in new_cas_dict.items():
         if chain not in BOTS:
             continue
+        # TODO: this can be where strategies go
         for ca in cas:
             tasks.append(send_msg(ca, client, BOTS[chain][0].id))
             # tasks.append(forward_msg(text, client, BOTS[chain][1]))
@@ -219,15 +200,19 @@ async def last_resort_fwd_bot(event):
 
 
 def main() -> None:
+    # thread for continously storing seen contracts
     thread = threading.Thread(target=update_ca_file)
-
     thread.start()
 
-    with client:
-        client.run_until_disconnected()
-
-    Active.ACTIVE = False
-    thread.join()
+    try:
+        with client:
+            client.run_until_disconnected()
+    except Exception as e:
+        logger.error(e, exc_info=True)
+    finally:
+        logger.info("Tg Bot stopped")
+        Active.ACTIVE = False
+        thread.join()
 
 
 if __name__ == "__main__":
