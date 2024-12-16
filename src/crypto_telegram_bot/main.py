@@ -90,12 +90,19 @@ def find_contracts(text: str) -> dict[str, set[str]]:
         if FIRST_TIME in text:
             pattern = f"`{pattern}`"
 
-        cas = set(ca.strip("`") for ca in re.findall(pattern=pattern, string=text))
+        cas = re.findall(pattern=pattern, string=text)
+        if not cas:
+            continue
+
+        cas = set(ca.strip("`") for ca in cas)
+        # Filter out contracts accounting also for lowercase
+        for ca in cas.copy():
+            if (ca.lower() in CONTRACTS_SEEN) or (ca in CONTRACTS_SEEN):
+                cas.discard(ca)
 
         if cas:
-            new_cas = cas.difference(CONTRACTS_SEEN)
-            new_ca_dict[chain] = new_cas
-            CONTRACTS_SEEN.update(new_cas)
+            new_ca_dict[chain] = cas
+            CONTRACTS_SEEN.update(cas)
 
     return new_ca_dict
 
