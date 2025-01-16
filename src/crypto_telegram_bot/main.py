@@ -149,7 +149,7 @@ def schedule_forward_cas(message) -> list:
 logging.info("Launching Tg Bot...")
 
 
-@client.on(events.MessageEdited(chats=CFG.fwd_group.id, from_users=RICK_BOT))
+@client.on(events.MessageEdited(chats=CFG.tracked_ids))
 @client.on(events.NewMessage(chats=CFG.tracked_ids))
 async def forward_messages(event):
     """
