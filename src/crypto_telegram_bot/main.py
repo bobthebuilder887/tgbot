@@ -149,6 +149,7 @@ def schedule_forward_cas(message) -> list:
 logging.info("Launching Tg Bot...")
 
 
+@client.on(events.MessageEdited(chats=CFG.fwd_group.id, from_users=RICK_BOT))
 @client.on(events.NewMessage(chats=CFG.tracked_ids))
 async def forward_messages(event):
     """
@@ -174,6 +175,7 @@ async def forward_messages(event):
     await asyncio.gather(*tasks)
 
 
+@client.on(events.MessageEdited(chats=CFG.fwd_group.id, from_users=RICK_BOT))
 @client.on(events.NewMessage(chats=CFG.fwd_group.id, from_users=RICK_BOT))
 async def last_resort_fwd_bot(event):
     """
