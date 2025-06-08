@@ -18,6 +18,7 @@ class ScriptConfig:
     source_groups: list[TgId]
     source_channels: list[TgId]
     ignore_ids: list[TgId]
+    autobuy_ids: list[TgId]
     fwd_group: TgId
     sol_bot_1: TgId
     sol_bot_2: TgId
@@ -58,6 +59,7 @@ class ScriptConfig:
             cfg = json.loads(json_file.read())
 
         ignore_ids = [TgId(**u) for u in cfg["Groups"]["ignore_ids"]]
+        autobuy_ids = [TgId(**u) for u in cfg["Groups"]["autobuy_ids"]]
         source_channels = [TgId(**u) for u in cfg["Groups"]["source_channels"]]
         source_groups = [TgId(**u) for u in cfg["Groups"]["source_groups"]]
 
@@ -69,6 +71,7 @@ class ScriptConfig:
             source_groups=source_groups,
             source_channels=source_channels,
             ignore_ids=ignore_ids,
+            autobuy_ids=autobuy_ids,
             fwd_group=TgId(**cfg["Groups"]["fwd_group"]),
             sol_bot_1=TgId(**cfg["Bots"]["sol_bot_1"]),
             sol_bot_2=TgId(**cfg["Bots"]["sol_bot_2"]),

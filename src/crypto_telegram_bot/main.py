@@ -10,6 +10,10 @@ from telethon import TelegramClient, events
 
 from crypto_telegram_bot.config import ScriptConfig
 
+
+# TODO: forward only new contracts to the aggregator/bots
+
+
 # Set up logging
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -131,7 +135,7 @@ async def fwd_msg(message, client) -> None:
     logger.info(f"Message forwarded to {CFG.fwd_group}: {message.text}")
 
 
-def schedule_forward_cas(message) -> list:
+def schedule_forward_cas(message, bot=0) -> list:
     tasks = []
     if not message.text:
         return tasks
@@ -139,9 +143,8 @@ def schedule_forward_cas(message) -> list:
     for chain, cas in new_cas_dict.items():
         if chain not in BOTS:
             continue
-        # TODO: this can be where strategies go
         for ca in cas:
-            tasks.append(send_msg(ca, client, BOTS[chain][0].id))
+            tasks.append(send_msg(ca, client, BOTS[chain][bot].id))
             # tasks.append(forward_msg(text, client, BOTS[chain][1]))
     return tasks
 
@@ -165,7 +168,12 @@ async def forward_messages(event):
         if msg.text.startswith(cmd):
             return
 
-    tasks = schedule_forward_cas(msg)
+    tasks = []
+
+    if user_id in CFG.autobuy_ids:
+        tasks.extend(schedule_forward_cas(msg, bot=1))
+    else:
+        tasks.extend(schedule_forward_cas(msg, bot=0))
 
     for pattern in ALL_PATTERNS:
         if re.findall(pattern=pattern, string=msg.text):

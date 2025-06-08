@@ -14,6 +14,7 @@ dev = ["isort", "ruff"]
 [project.scripts]
 tg-bot = "crypto_telegram_bot.main:main"
 get-id-cli = "crypto_telegram_bot.id_helper:get_user_info_cli"
+get-groups = "crypto_telegram_bot.group_ids:main"
 auth-cli = "crypto_telegram_bot.config:auth_cli"
 
 [tool.ruff]

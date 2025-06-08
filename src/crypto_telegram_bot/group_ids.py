@@ -1,149 +1,113 @@
-import asyncio
 import json
-import logging
-from datetime import datetime
-from pathlib import Path
-from typing import Dict, List, Optional, Union
-
-from telethon import TelegramClient
-from telethon.tl.functions.channels import GetFullChannelRequest
-from telethon.tl.functions.messages import ExportChatInviteRequest, GetFullChatRequest
-from telethon.tl.types import Channel, Chat, User
-
-from crypto_telegram_bot.config import ScriptConfig
-
-# Set up logging
-logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-cfg = ScriptConfig.from_json()
-SESSION = cfg.test_session_name
+from telethon.sync import TelegramClient
+from telethon.tl.types import Channel, Chat
 
 
-class GroupLister:
-    def __init__(self, api_id: str, api_hash: str):
-        self.client = TelegramClient(SESSION, api_id, api_hash)
+def get_telegram_groups(api_id, api_hash, phone_number, session_name):
+    """
+    Fetches all Telegram groups/channels and saves their info to a JSON file
+    """
 
-    async def start(self):
-        """Start the client session"""
-        await self.client.start()
+    # Create the client
+    client = TelegramClient(session_name, api_id, api_hash)
 
-    async def get_all_groups(self) -> List[Dict]:
-        """
-        Get all groups the user is part of, including private groups,
-        supergroups, and channels
-        """
-        groups = []
-        async for dialog in self.client.iter_dialogs():
+    try:
+        # Start the client
+        client.start(phone=phone_number)
+        print("Successfully connected to Telegram!")
+
+        # Get all dialogs (chats, groups, channels)
+        dialogs = client.get_dialogs()
+
+        groups_data = []
+
+        for dialog in dialogs:
             entity = dialog.entity
 
-            # Skip users and bots
-            if isinstance(entity, User):
-                continue
+            # Check if it's a group or channel (not a private chat)
+            if isinstance(entity, (Channel, Chat)):
+                group_info = {
+                    "id": entity.id,
+                    "name": entity.title,
+                    "type": "channel" if isinstance(entity, Channel) else "group",
+                    "is_private": getattr(entity, "access_hash", None) is not None,
+                    "participant_count": getattr(entity, "participants_count", "N/A"),
+                }
 
-            # Get basic info
-            basic_info = {
-                "id": entity.id,
-                "name": dialog.name,
-                "unread_count": dialog.unread_count,
-                "last_message_date": dialog.date.isoformat() if dialog.date else None,
-                "type": self._get_chat_type(entity),
-                "member_count": 0,  # Will be updated if accessible
-                "username": getattr(entity, "username", None),
-                "invite_link": None,  # Will be updated if available
-                "is_private": not bool(getattr(entity, "username", None)),
-            }
-
-            try:
-                # Try to get full chat information
+                # Additional info for channels
                 if isinstance(entity, Channel):
-                    full_chat = await self.client(GetFullChannelRequest(entity))
-                    basic_info["member_count"] = full_chat.full_chat.participants_count
+                    group_info["is_broadcast"] = entity.broadcast
+                    group_info["is_megagroup"] = entity.megagroup
+                    group_info["username"] = getattr(entity, "username", None)
 
-                    # Try to get invite link if it's private
-                    if basic_info["is_private"]:
-                        try:
-                            invite_link = await self.client(ExportChatInviteRequest(entity))
-                            basic_info["invite_link"] = invite_link.link
-                        except Exception:
-                            pass
+                groups_data.append(group_info)
+                print(f"Found: {group_info['name']} (ID: {group_info['id']})")
 
-                elif isinstance(entity, Chat):
-                    full_chat = await self.client(GetFullChatRequest(entity.id))
-                    basic_info["member_count"] = len(full_chat.participants.participants)
+        # Save to JSON file
+        with open("telegram_groups.json", "w", encoding="utf-8") as f:
+            json.dump(groups_data, f, indent=2, ensure_ascii=False)
 
-            except Exception as e:
-                logger.warning(f"Couldn't get full info for {dialog.name}: {str(e)}")
+        print(f"\nSuccessfully saved {len(groups_data)} groups to 'telegram_groups.json'")
 
-            groups.append(basic_info)
+        return groups_data
 
-        return groups
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return None
 
-    def _get_chat_type(self, entity: Union[Channel, Chat]) -> str:
-        """Determine the type of chat"""
-        if isinstance(entity, Channel):
-            return "channel" if entity.broadcast else "supergroup"
-        return "group"
-
-    async def export_groups(self, output_file: Optional[str] = None) -> None:
-        """
-        Export group information to a file
-        """
-        groups = await self.get_all_groups()
-
-        # Sort groups by type and name
-        groups.sort(key=lambda x: (x["type"], x["name"]))
-
-        # Prepare output data
-        output = {
-            "export_date": datetime.now().isoformat(),
-            "total_groups": len(groups),
-            "private_groups": len([g for g in groups if g["is_private"]]),
-            "public_groups": len([g for g in groups if not g["is_private"]]),
-            "groups": groups,
-        }
-
-        # Default filename if none provided
-        if not output_file:
-            output_file = "telegram_groups.json"
-
-        # Ensure the output directory exists
-        Path(output_file).parent.mkdir(parents=True, exist_ok=True)
-
-        # Write to file
-        with open(output_file, "w", encoding="utf-8") as f:
-            json.dump(output, f, indent=2, ensure_ascii=False)
-
-        logger.info(f"Exported {len(groups)} groups to {output_file}")
-
-        # Print summary
-        print("\nGroup Summary:")
-        print(f"Total Groups: {output['total_groups']}")
-        print(f"Private Groups: {output['private_groups']}")
-        print(f"Public Groups: {output['public_groups']}")
-        print("\nGroups by Type:")
-
-        # Count by type
-        type_counts = {}
-        for group in groups:
-            type_counts[group["type"]] = type_counts.get(group["type"], 0) + 1
-
-        for type_name, count in type_counts.items():
-            print(f"{type_name.capitalize()}: {count}")
-
-
-async def async_main():
-    # Load config
-    cfg = ScriptConfig.from_json(Path("config.json"))
-    # Initialize and start the group lister
-    lister = GroupLister(str(cfg.api_id), cfg.api_hash)
-    await lister.start()
-    # Export groups
-    await lister.export_groups()
+    finally:
+        # Close the client
+        client.disconnect()
 
 
 def main():
-    asyncio.run(async_main())
+    """
+    Main function to run the script
+    """
+    print("Telegram Groups Extractor")
+    print("=" * 30)
+
+    # Load configuration from JSON file
+    try:
+        with open("config.json", "r", encoding="utf-8") as f:
+            config = json.load(f)["Telegram"]
+
+        api_id = config.get("api_id")
+        api_hash = config.get("api_hash")
+        phone_number = config.get("phone_number")
+        session_name = config.get("session_name")
+
+        # Validate required fields
+        if not api_id or not api_hash or not phone_number:
+            print("Error: Missing required fields in config.json")
+            print("Required fields: api_id, api_hash, phone_number")
+            return
+
+    except FileNotFoundError:
+        print("Error: config.json file not found!")
+        print("Please create a config.json file with your Telegram API credentials.")
+        print("Example format:")
+        print("{")
+        print('  "api_id": 12345678,')
+        print('  "api_hash": "your_api_hash_here",')
+        print('  "phone_number": "+1234567890"')
+        print("}")
+        return
+    except json.JSONDecodeError:
+        print("Error: Invalid JSON format in config.json")
+        return
+    except Exception as e:
+        print(f"Error reading config file: {e}")
+        return
+
+    groups = get_telegram_groups(api_id, api_hash, phone_number, session_name)
+
+    if groups:
+        print(f"\nExtracted {len(groups)} groups/channels:")
+        for group in groups[:5]:  # Show first 5 as preview
+            print(f"- {group['name']} ({group['type']})")
+        if len(groups) > 5:
+            print(f"... and {len(groups) - 5} more")
 
 
 if __name__ == "__main__":
