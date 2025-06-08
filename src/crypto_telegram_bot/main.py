@@ -50,6 +50,7 @@ IGNORE_CMDS: tuple[str, ...] = (
     r"/fa",
     r"/cc",
     r"/c",
+    r"/pnl",
 )
 
 RICK_BOT: int = 6126376117
