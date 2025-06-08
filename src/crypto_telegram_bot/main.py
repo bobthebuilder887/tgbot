@@ -11,7 +11,7 @@ from telethon import TelegramClient, events
 from crypto_telegram_bot.config import ScriptConfig
 
 
-# TODO: forward only new contracts to the aggregator/bots
+# TODO: forward only new contracts to the aggregator/bots ??
 
 
 # Set up logging
@@ -36,7 +36,6 @@ CONTRACT_PATTERNS: dict[str, str] = {
 
 COIN_PATTERNS: tuple[str, ...] = (
     SCAN := r"^/z",
-    CHART := r"^/cc",
     TICKER := r"\$[A-z0-9]+",
 )
 
@@ -49,6 +48,8 @@ IGNORE_CMDS: tuple[str, ...] = (
     r"/find",
     r"/first",
     r"/fa",
+    r"/cc",
+    r"/c",
 )
 
 RICK_BOT: int = 6126376117
